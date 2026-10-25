@@ -1,4 +1,4 @@
-## Arquitectura de datos: Limpieza, Normalización y Modelado
+## Arquitectura de datos
 
 El procesamiento de los datos brutos recopilados desde Kaggle hasta su consumo analítico se estructuró en tres fases metodológicas rigurosas para garantizar la consistencia estadística y el rendimiento del aplicativo.
 
@@ -14,7 +14,7 @@ El conjunto de datos original presentaba vacíos operativos y formatos no estand
 
 ---
 
-### 2. Normalización (Esquema Relacional 3FN)
+### 2. Normalización 
 
 A partir de la tabla masiva de la fuente original, se diseñó una primera base de datos relacional normalizada para asegurar la integridad referencial y aislar los dominios categóricos. 
 
@@ -22,7 +22,7 @@ A partir de la tabla masiva de la fuente original, se diseñó una primera base 
 
 ---
 
-### 3. Desnormalización (Modelo Dimensional en Estrella)
+### 3. Desnormalización 
 
 Para optimizar el rendimiento de las consultas analíticas del aplicativo y los tableros ejecutivos, el modelo relacional se desnormalizó transformándose en un Esquema en Estrella:
 
