@@ -1,4 +1,4 @@
-## Limpieza, Normalización y Desnormalización de Datos
+## Limpieza, Normalización y Denormalización de Datos
 
 Para poder analizar la base de datos de incendios forestales en nuestro aplicativo y en los tableros de control, organizamos el procesamiento de la información en tres pasos principales:
 
@@ -22,7 +22,7 @@ Partiendo de la tabla masiva original organizamos la información en una base de
 
 ---
 
-### 3. Desnormalización 
+### 3. Denormalización 
 
 Para que las consultas en el aplicativo y en las herramientas de visualización fueran mucho más rápidas y eficientes, transformamos el modelo relacional en un Modelo Dimensional en Estrella:
 
