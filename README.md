@@ -1,31 +1,39 @@
-## Arquitectura de datos
+## Limpieza, Normalización y Desnormalización de Datos
 
-El procesamiento de los datos brutos recopilados desde Kaggle hasta su consumo analítico se estructuró en tres fases metodológicas rigurosas para garantizar la consistencia estadística y el rendimiento del aplicativo.
-
----
-
-### 1. Limpieza y preparación de datos
-
-El conjunto de datos original presentaba vacíos operativos y formatos no estandarizados que requerían corrección previa antes de cualquier modelado:
-
-* **Imputación geoespacial:** El 36% de los registros carecían de asignación de condado y estado. Para corregirlo de forma automatizada, se cruzaron las coordenadas de latitud y longitud con los contornos vectoriales del censo de Estados Unidos, asignando el código correspondiente mediante intersección espacial.
-* **Estandarización temporal:** Todos los campos de fechas originales fueron transformados de formato Juliano a formato estándar de fecha.
-* **Tratamiento de la ausencia de contención:** Se identificó que un porcentaje elevado de incendios no registraba fecha de contención. En lugar de descartar los eventos, se optó por conservarlos en el universo de registro incorporando una bandera binaria de control, lo que permite medir con precisión la cobertura operativa de las agencias sin alterar los cálculos métricos.
+Para poder analizar la base de datos de incendios forestales en nuestro aplicativo y en los tableros de control, organizamos el procesamiento de la información en tres pasos principales:
 
 ---
 
-### 2. Normalización 
+### 1. Limpieza de Datos
 
-A partir de la tabla masiva de la fuente original, se diseñó una primera base de datos relacional normalizada para asegurar la integridad referencial y aislar los dominios categóricos. 
+La base de datos original traía algunos campos con información faltante y formatos que necesitaban ajustarse antes de trabajar:
 
-* **Reducción de dominios:** Se depuró el esquema inicial para conservar únicamente las entidades estrictamente relevantes para la investigación, estructurando el modelo en torno a tablas clave compuestas por la tabla transaccional base y catálogos normalizados para áreas geográficas, propietarios, causas, clases de tamaño y ubicaciones.
+* **Completar datos geográficos faltantes:** Aproximadamente un 36% de los registros no tenían el condado ni el estado asignado. Para solucionarlo, usamos las coordenadas de latitud y longitud de cada incendio y las cruzamos con el mapa vectorial de contornos de condados del censo de Estados Unidos. De esta forma pudimos identificar de manera automática a qué estado y condado pertenecía cada evento.
+* **Formato de fechas:** Las fechas de la base original venían en formato Juliano, por lo que las convertimos todas al formato estándar de fecha (`DATE`).
+* **Manejo de fechas de contención vacías:** Notamos que muchos incendios no tenían registrada la fecha de contención. En lugar de borrar esos registros, decidimos conservarlos e identificar los incendios que sí tenían fecha mediante una columna o bandera de control (`tiene_contencion` con valores 1 o 0), evitando perder datos importantes.
 
 ---
 
-### 3. Desnormalización 
+### 2. Normalización (Tercera Forma Normal - 3FN)
 
-Para optimizar el rendimiento de las consultas analíticas del aplicativo y los tableros ejecutivos, el modelo relacional se desnormalizó transformándose en un Esquema en Estrella:
+Partiendo de la tabla masiva original, organizamos la información en una base de datos relacional aplicando las reglas de la Tercera Forma Normal (3FN):
 
-* **Tabla de Hechos:** Almacena las métricas cuantitativas del estudio (como los acres quemados y los días de duración) junto al código de la unidad reportora como atributo degenerado.
-* **Claves Subrogadas:** Para acelerar el procesamiento y reducir el peso del almacenamiento, se utilizó la función analítica de SQL para asignar identificadores numéricos secuenciales a los contextos geográficos y temporales.
-* **Dimensiones analíticas:** Se construyeron seis tablas de contexto enriquecidas aplicando reglas de negocio específicas para estacionalidades, macro-categorías de causas y detección de incendios de gran magnitud.
+* **Eliminación de datos repetidos:** Separamos la información en tablas independientes de catálogos para evitar redundancias en datos categóricos como causas, propietarios y ubicaciones.
+* **Selección de tablas relevantes:** Simplificamos el sistema conservando únicamente las tablas y campos que realmente eran útiles para nuestra investigación. El modelo normalizado quedó estructurado por la tabla principal `tabla_incendios` conectada a las tablas de `tabla_geographic_area`, `tabla_propietario`, `tabla_causa_incendio`, `tabla_clase_tamano`, `tabla_condado` y `tabla_estado`.
+
+---
+
+### 3. Desnormalización (Modelo en Estrella)
+
+Para que las consultas en el aplicativo y en las herramientas de visualización fueran mucho más rápidas y eficientes, transformamos el modelo relacional en un **Modelo Dimensional en Estrella**:
+
+* **Tabla de Hechos (`fact_incendio`):** Es la tabla central del modelo y contiene las métricas numéricas principales que vamos a analizar (como los acres quemados y los días de duración), manteniendo además el código de la unidad que reportó el incendio (`nwcg_unit_id`) como un atributo directo.
+* **Columnas de control en la tabla de hechos:** Para no alterar los cálculos matemáticos y promedios, colocamos la columna `tiene_contencion` directamente en la tabla de hechos (asignando un "1" si el incendio tiene fecha de fin y un "0" si no la tiene).
+* **Uso de IDs numéricos:** Para no repetir textos largos dentro de la tabla de hechos y hacer que las consultas funcionen más rápido, creamos códigos numéricos (claves subrogadas) para conectar con cada tabla de contexto.
+* **Tablas de Dimensiones:** Creamos 6 tablas alrededor de la tabla de hechos para dar contexto a los datos y agrupamos la información según nuestras reglas de análisis:
+  * `dim_fecha`: Calcula la estación del año (Invierno, Primavera, Verano, Otoño) según el mes de inicio del incendio.
+  * `dim_region`: Contiene las 10 regiones operativas de atención a incendios.
+  * `dim_causa`: Agrupa los motivos del incendio en "Natural" (rayos) y "Humana" (el resto de las causas).
+  * `dim_administracion`: Clasifica los dueños de los terrenos en tres categorías: Federal, Estatal/Local y Privada.
+  * `dim_ubicacion`: Guarda el estado y el condado del incendio.
+  * `dim_tamano`: Define los rangos oficiales del tamaño del incendio (de la A a la G) e incluye un campo que marca con un "1" si el evento corresponde a un mega-incendio (Clase G).
