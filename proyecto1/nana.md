@@ -1,6 +1,6 @@
-# Diccionario de Datos - Capa Desnormalizada 
+# Diccionario de Datos - Capa Denormalizada 
 
-Este documento detalla la estructura y el significado de las tablas y campos creados en la fase de **Desnormalización**. El objetivo de esta capa es optimizar el rendimiento para las herramientas de visualización, donde el modelo separa el evento (Tabla de Hechos) de su contexto (Tablas de Dimensión) permitiendo consultas analíticas rápidas y precisas para responder a los objetivos de la investigación.
+Este documento detalla la estructura y el significado de las tablas y campos creados en la fase de **Denormalización**. El objetivo de esta capa es optimizar el rendimiento para las herramientas de visualización, donde el modelo separa el evento (Tabla de Hechos) de su contexto (Tablas de Dimensión) permitiendo consultas analíticas rápidas y precisas para responder a los objetivos de la investigación.
 
 ## 1. Tabla de Hechos (`fact_incendio`)
 Representa el evento principal, tiene una granularidad de un registro por cada incendio detectado y contiene las llaves que conectan con las dimensiones y las métricas cuantitativas
